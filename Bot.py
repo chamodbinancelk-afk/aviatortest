@@ -1,27 +1,26 @@
+import asyncio
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-Bot Token
-BOT_TOKEN = "8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg"
+BOT_TOKEN = "8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg"  # 👉 ඔයාගෙ token එක මෙතන දාන්න
 
-Start command handler
-def start(update: Update, context: CallbackContext):
+Start command function
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     name = user.first_name or "friend"
     welcome_text = f"👋 හෙලෝ {name}! Welcome to the group/bot! 😊"
-    context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_text)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_text)
 
-Main bot setup
-def main():
-    updater = Updater(BOT_TOKEN, use_context=True)
-    dp = updater.dispatcher
+Main function
+async def main():
+    app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    dp.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("start", start))
 
-    updater.start_polling()
-    updater.idle()
+    print("🤖 Bot is running...")
+    await app.run_polling()
 
+Run the bot
 if _name_ == "_main_":
-    main()
-
+    asyncio.run(main())
 
