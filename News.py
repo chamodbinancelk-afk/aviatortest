@@ -1,46 +1,24 @@
-import requests
-import time
+from googletrans import Translator
 from telegram import Bot
-from bs4 import BeautifulSoup
 
-Config
-TELEGRAM_TOKEN = "8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg"
-CHAT_ID = "-1003177936060"
-DEEPL_API_KEY = "YOUR_DEEPL_API_KEY"
-RSS_FEED_URL = "https://www.myfxbook.com/news/rss"  # Example URL, change to real feed
+def translate_and_send(news_en):
+    # 🔁 Initialize translator
+    translator = Translator()
+    
+    # 🌐 Translate English news to Sinhala
+    translated = translator.translate(news_en, dest='si').text
 
-def translate_text(text, target_lang="SI"):
-    url = "https://api-free.deepl.com/v2/translate"
-    params = {
-        "auth_key": DEEPL_API_KEY,
-        "text": text,
-        "target_lang": target_lang
-    }
-    resp = requests.post(url, data=params)
-    result = resp.json()
-    return result["translations"][0]["text"]
+    # 📲 Telegram Bot Config
+    TELEGRAM_BOT_TOKEN = '8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg'
+    TELEGRAM_CHAT_ID = '-1003177936060'  # Use -100... for channels
 
-def fetch_latest_news():
-    resp = requests.get(RSS_FEED_URL)
-    soup = BeautifulSoup(resp.content, features="xml")
-    items = soup.findAll("item")
-    news = []
-    for item in items:
-        title = item.title.text
-        link = item.link.text
-        news.append((title, link))
-    return news
+    bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
-def main():
-    posted = set()
-    while True:
-        news_list = fetch_latest_news()
-        for title, link in news_list:
-            if link not in posted:
-                translated = translate_text(title + "\n" + link)
-                bot.send_message(chat_id=CHAT_ID, text=translated)
-                posted.add(link)
-        time.sleep(300)  # every 5 minutes
+    # 📨 Send message
+    message = f"📰 *Fundamental News (සිංහල)*\ntranslated"
+    bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message, parse_mode="Markdown")
 
 if _name_ == "_main_":
-    main()
+    # 📰 Example news input (replace with real-time API or data)
+    sample_news = "US Federal Reserve expected to cut interest rates today, increasing market volatility."
+    translate_and_send(sample_news)
