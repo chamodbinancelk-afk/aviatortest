@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 from telegram import Bot
 
-RSS_URL = "https://www.myfxbook.com/rss"
+RSS_URL = "https://subscriptions.fxstreet.com/RSS/News.aspx"
 CHECK_INTERVAL = 100  # seconds
 
 BOT_TOKEN = "8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg"
