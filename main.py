@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 from telegram import Bot
 
-RSS_URL = "https://investing.com"
+RSS_URL = "https://www.marketwatch.com/rss"
 CHECK_INTERVAL = 100  # seconds
 
 BOT_TOKEN = "8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg"
