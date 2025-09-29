@@ -9,7 +9,6 @@ CHAT_ID = "-1003177936060"
 DEEPL_API_KEY = "YOUR_DEEPL_API_KEY"
 RSS_FEED_URL = "https://www.myfxbook.com/news/rss"  # Example URL, change to real feed
 
-bot = Bot(token=TELEGRAM_TOKEN)
 def translate_text(text, target_lang="SI"):
     url = "https://api-free.deepl.com/v2/translate"
     params = {
