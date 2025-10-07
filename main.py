@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 from telegram import Bot
 from dotenv import load_dotenv
+from datetime import datetime
 import os
 import time
 import logging
@@ -12,13 +13,12 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 FF_URL = os.getenv("FOREXFACTORY_NEWS_URL", "https://www.forexfactory.com/news")
-FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 300))
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 1))
 LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
 translator = Translator()
 
-# Setup logging
 logging.basicConfig(level=logging.INFO, filename="bot.log",
                     format='%(asctime)s %(levelname)s: %(message)s')
 
@@ -41,7 +41,7 @@ def fetch_latest_news():
 
     latest = soup.find('a', class_='title')
     if not latest:
-        logging.warning("News element not found!")
+        logging.warning("News title not found.")
         return
 
     headline = latest.get_text(strip=True)
@@ -50,26 +50,60 @@ def fetch_latest_news():
 
     write_last_headline(headline)
 
+    # Translate
     try:
         translation = translator.translate(headline, dest='si').text
     except Exception as e:
-        translation = "Translation failed"
+        translation = "සිංහල පරිවර්තනය ලබාගැනීමට නොහැක."
         logging.error(f"Translation error: {e}")
 
-    message = f"""🗞 ForexFactory News Update
+    # Date and time
+    now = datetime.now()
+    date_time = now.strftime('%Y-%m-%d %I:%M %p')
 
-English: {headline}
-සිංහල: {translation}
+    # Try to get an image from the article if available
+    image_url = None
+    article_link = "https://www.forexfactory.com" + latest['href']
+    try:
+        article_page = requests.get(article_link, headers=headers)
+        article_soup = BeautifulSoup(article_page.content, 'html.parser')
+        img = article_soup.find('img')
+        if img and 'src' in img.attrs:
+            image_url = img['src']
+    except Exception as e:
+        logging.warning("Image fetch failed.")
+
+    # Message format
+    caption = f"""📰 **Fundamental News (සිංහල)**
+
+🕒 **Date & Time:** {date_time}
+
+
+**English:** {headline}
+
+
+**සිංහල:** {translation}
+
+
+🔗 [Read More]({article_link})
+
+
+🚀 **Dev :** Mr Chamo 🇱🇰
 """
 
-    bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
-    logging.info(f"Posted: {headline}")
+    if image_url:
+        bot.send_photo(chat_id=CHAT_ID, photo=image_url, caption=caption, parse_mode='Markdown')
+    else:
+        bot.send_message(chat_id=CHAT_ID, text=caption, parse_mode='Markdown')
+
+    logging.info("News sent: %s", headline)
 
 if __name__ == '__main__':
     while True:
         try:
             fetch_latest_news()
         except Exception as e:
-            logging.error(f"Error in loop: {e}")
+            logging.error(f"Loop error: {e}")
         time.sleep(FETCH_INTERVAL)
+
 
