@@ -2,59 +2,74 @@ import requests
 from bs4 import BeautifulSoup
 from googletrans import Translator
 from telegram import Bot
+from dotenv import load_dotenv
+import os
 import time
+import logging
 
-# Telegram Config
-TELEGRAM_BOT_TOKEN = '8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg'
-TELEGRAM_CHAT_ID = '-1003177936060'
+# Load environment variables
+load_dotenv()
+BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+FF_URL = os.getenv("FOREXFACTORY_NEWS_URL", "https://www.forexfactory.com/news")
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 300))
+LAST_HEADLINE_FILE = "last_headline.txt"
 
-# ForexFactory News Page URL
-FF_URL = 'https://www.forexfactory.com/news'
-
-# Bot & Translator Init
-bot = Bot(token=TELEGRAM_BOT_TOKEN)
+bot = Bot(token=BOT_TOKEN)
 translator = Translator()
-last_headline = None
+
+# Setup logging
+logging.basicConfig(level=logging.INFO, filename="bot.log",
+                    format='%(asctime)s %(levelname)s: %(message)s')
+
+def read_last_headline():
+    if not os.path.exists(LAST_HEADLINE_FILE):
+        return None
+    with open(LAST_HEADLINE_FILE, 'r', encoding='utf-8') as f:
+        return f.read().strip()
+
+def write_last_headline(headline):
+    with open(LAST_HEADLINE_FILE, 'w', encoding='utf-8') as f:
+        f.write(headline)
 
 def fetch_latest_news():
-    global last_headline
-
+    last = read_last_headline()
     headers = {'User-Agent': 'Mozilla/5.0'}
-    response = requests.get(FF_URL, headers=headers)
-    soup = BeautifulSoup(response.content, 'html.parser')
+    resp = requests.get(FF_URL, headers=headers, timeout=10)
+    resp.raise_for_status()
+    soup = BeautifulSoup(resp.content, 'html.parser')
 
-    # Get the latest news block
-    latest_news = soup.find('a', class_='title')
-
-    if not latest_news:
-        print("News not found!")
+    latest = soup.find('a', class_='title')
+    if not latest:
+        logging.warning("News element not found!")
         return
 
-    headline = latest_news.get_text(strip=True)
-
-    # Prevent duplicate messages
-    if headline == last_headline:
+    headline = latest.get_text(strip=True)
+    if headline == last:
         return
 
-    last_headline = headline
+    write_last_headline(headline)
 
-    # Translate
-    translation = translator.translate(headline, dest='si').text
+    try:
+        translation = translator.translate(headline, dest='si').text
+    except Exception as e:
+        translation = "Translation failed"
+        logging.error(f"Translation error: {e}")
 
     message = f"""🗞 ForexFactory News Update
+
 English: {headline}
 සිංහල: {translation}
 """
 
-    # Send to Telegram
-    bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message, parse_mode='Markdown')
+    bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
+    logging.info(f"Posted: {headline}")
 
-# Looping
 if __name__ == '__main__':
     while True:
         try:
             fetch_latest_news()
         except Exception as e:
-            print(f"Error: {e}")
-        time.sleep(300)  # Every 5 min
+            logging.error(f"Error in loop: {e}")
+        time.sleep(FETCH_INTERVAL)
 
