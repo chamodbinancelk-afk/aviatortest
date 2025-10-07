@@ -1,26 +1,46 @@
-import asyncio
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+import requests
+from bs4 import BeautifulSoup
+from googletrans import Translator
+from telegram import Bot
+import time
 
-BOT_TOKEN = "8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg"  # 👉 ඔයාගෙ token එක මෙතන දාන්න
+BOT_TOKEN = '8299929776:AAGKU7rkfakmDBXdgiGSWzAHPgLRJs-twZg'
+CHAT_ID = '-1003177936060'
+FF_URL = 'https://www.forexfactory.com/calendar'
 
-Start command function
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    name = user.first_name or "friend"
-    welcome_text = f"👋 හෙලෝ {name}! Welcome to the group/bot! 😊"
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=welcome_text)
+bot = Bot(token=BOT_TOKEN)
+translator = Translator()
+last_headline = None
 
-Main function
-async def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+def fetch_latest_news():
+    global last_headline
 
-    app.add_handler(CommandHandler("start", start))
+    headers = {'User-Agent': 'Mozilla/5.0'}
+    response = requests.get(FF_URL, headers=headers)
+    soup = BeautifulSoup(response.content, 'html.parser')
 
-    print("🤖 Bot is running...")
-    await app.run_polling()
+    event_cell = soup.find('td', class_='calendar__event-title')
+    if not event_cell:
+        return
 
-Run the bot
-if _name_ == "_main_":
-    asyncio.run(main())
+    headline = event_cell.get_text(strip=True)
+    if headline == last_headline:
+        return
+    last_headline = headline
 
+    translation = translator.translate(headline, dest='si').text
+    message = f"""🗞 ForexFactory News Update
+
+English: {headline}
+සිංහල: {translation}
+"""
+
+    bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
+
+if __name__ == '__main__':
+    while True:
+        try:
+            fetch_latest_news()
+        except Exception as e:
+            print(f"Error: {e}")
+        time.sleep(300)
