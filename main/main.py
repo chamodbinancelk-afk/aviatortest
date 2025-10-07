@@ -17,6 +17,7 @@ LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
 translator = Translator()
+now = datetime.now().strftime('%Y-%m-%d %I:%M %p')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, filename="bot.log",
@@ -57,14 +58,18 @@ def fetch_latest_news():
         logging.error(f"Translation error: {e}")
 
     message = f"""📰 *Fundamental News (සිංහල)*
+    
 
-🌎 English: {headline}
-
-
-🔥 සිංහල: {translation}
+⏰ *Date*: {now}
 
 
-🚀 Dev : Mr Chamo
+🌎 *English*: {headline}
+
+
+🔥 *සිංහල*: {translation}
+
+
+🚀 *Dev* : Mr Chamo 🇱🇰
 """
 
     bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
