@@ -13,7 +13,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 FF_URL = os.getenv("FOREXFACTORY_NEWS_URL", "https://www.forexfactory.com/news")
-FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 5))
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 60))
 LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
