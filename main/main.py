@@ -42,7 +42,7 @@ def fetch_latest_news():
     resp.raise_for_status()
     soup = BeautifulSoup(resp.content, 'html.parser')
 
-    latest = soup.find('a', class_='title')
+    latest = soup.find('h1')
     if not latest:
         logging.warning("News element not found!")
         return
