@@ -26,18 +26,15 @@ logging.basicConfig(level=logging.INFO, filename="bot.log",
 
 def translate_with_openai(text):
     try:
-        prompt = f"Translate this to Sinhala:text"
+        prompt = f"Translate the following sentence to Sinhala:\ntext"
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=100,
-            temperature=0.5,
+            messages=[{"role": "user", "content": prompt}]
         )
-        return response.choices[0].message.content.strip()
+        translation = response.choices[0].message["content"].strip()
+        return translation
     except Exception as e:
-        logging.error(f"OpenAI translation error: {e}")
+        print("Translation error:", e)
         return "Translation failed"
 
 def read_last_headline():
@@ -57,7 +54,7 @@ def fetch_latest_news():
     resp.raise_for_status()
     soup = BeautifulSoup(resp.content, 'html.parser')
 
-    news_link = soup.find('a', href=lambda x: x and x.startswith('/news/') and not x.endswith('/hit'))
+    news_link = soup.find('a', href=lambda href: isinstance(href, str) and href.startswith('/news/') and not href.endswith('/hit'))
     if not news_link:
         logging.warning("News element not found!")
         return
@@ -88,7 +85,7 @@ def fetch_latest_news():
     bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
     logging.info(f"Posted: {headline}")
 
-if __name__ == __main__':
+if __name__ == '__main__':
     while True:
         try:
             fetch_latest_news()
