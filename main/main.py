@@ -1,6 +1,6 @@
 import requests
+import openai
 from bs4 import BeautifulSoup
-from googletrans import Translator
 from telegram import Bot
 from dotenv import load_dotenv
 import os
@@ -16,11 +16,29 @@ FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 100))
 LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
-translator = Translator()
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, filename="bot.log",
                     format='%(asctime)s %(levelname)s: %(message)s')
+
+
+def translate_with_openai(text):
+    try:
+        prompt = f"Translate this to Sinhala:text"
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=100,
+            temperature=0.5,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        logging.error(f"OpenAI translation error: {e}")
+        return "Translation failed"
 
 def read_last_headline():
     if not os.path.exists(LAST_HEADLINE_FILE):
@@ -51,7 +69,7 @@ def fetch_latest_news():
     write_last_headline(headline)
 
     try:
-        translation = translator.translate(headline, dest='si').text
+        translation = translate_with_openai(headline)
     except Exception as e:
         translation = "Translation failed"
         logging.error(f"Translation error: {e}")
@@ -77,5 +95,4 @@ if __name__ == __main__':
         except Exception as e:
             logging.error(f"Error in loop: {e}")
         time.sleep(FETCH_INTERVAL)
-
 
