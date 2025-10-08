@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 from telegram import Bot
 from dotenv import load_dotenv
-from datetime import datetime
 import os
 import time
 import logging
@@ -13,13 +12,11 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 FF_URL = os.getenv("FOREXFACTORY_NEWS_URL", "https://www.forexfactory.com/news")
-FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 60))
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 100))
 LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
 translator = Translator()
-now = datetime.now() 
-date_time = now.strftime('%Y-%m-%d %I:%M %p')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, filename="bot.log",
@@ -42,7 +39,7 @@ def fetch_latest_news():
     resp.raise_for_status()
     soup = BeautifulSoup(resp.content, 'html.parser')
 
-    latest = soup.find('h1')
+    latest = soup.find('a', class_='title')
     if not latest:
         logging.warning("News element not found!")
         return
@@ -60,24 +57,20 @@ def fetch_latest_news():
         logging.error(f"Translation error: {e}")
 
     message = f"""📰 *Fundamental News (සිංහල)*
-    
 
-⏰ *Date*: {date_time}
-
-
-🌎 *English*: {headline}
+🌎 *English:* {headline}
 
 
-🔥 *සිංහල*: {translation}
+🔥 *සිංහල:* {translation}
 
 
-🚀 *Dev* : Mr Chamo 🇱🇰
+🚀 *Dev :* Mr Chamo
 """
 
     bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
     logging.info(f"Posted: {headline}")
 
-if __name__ == '__main__':
+if __name__ == __main__':
     while True:
         try:
             fetch_latest_news()
