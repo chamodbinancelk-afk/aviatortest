@@ -39,12 +39,12 @@ def fetch_latest_news():
     resp.raise_for_status()
     soup = BeautifulSoup(resp.content, 'html.parser')
 
-    latest = soup.find('a', class_='title')
-    if not latest:
+    news_link = soup.find('a', href=lambda x: x and x.startswith('/news/') and not x.endswith('/hit'))
+    if not news_link:
         logging.warning("News element not found!")
         return
 
-    headline = latest.get_text(strip=True)
+    headline = news_link.get_text(strip=True)
     if headline == last:
         return
 
