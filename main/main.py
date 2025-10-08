@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 from telegram import Bot
 from dotenv import load_dotenv
+from datetime import datetime
 import os
 import time
 import logging
@@ -17,7 +18,8 @@ LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
 translator = Translator()
-now = datetime.now().strftime('%Y-%m-%d %I:%M %p')
+now = datetime.now() 
+date_time = now.strftime('%Y-%m-%d %I:%M %p')
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, filename="bot.log",
@@ -60,7 +62,7 @@ def fetch_latest_news():
     message = f"""📰 *Fundamental News (සිංහල)*
     
 
-⏰ *Date*: {now}
+⏰ *Date*: {date_time}
 
 
 🌎 *English*: {headline}
@@ -75,7 +77,7 @@ def fetch_latest_news():
     bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
     logging.info(f"Posted: {headline}")
 
-if _name_ == '_main_':
+if __name__ == '__main__':
     while True:
         try:
             fetch_latest_news()
