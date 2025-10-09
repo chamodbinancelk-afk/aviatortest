@@ -1,5 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
+from googletrans import Translator
+from datetime import datetime
 from telegram import Bot
 from dotenv import load_dotenv
 import os
@@ -15,26 +17,16 @@ FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 100))
 LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
-openai.api_key = os.getenv("OPENAI_API_KEY")
+translator = Translator()
 
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, filename="bot.log",
                     format='%(asctime)s %(levelname)s: %(message)s')
 
+now = datetime.now()
+    date_time = now.strftime('%Y-%m-%d %I:%M %p')
 
-def translate_with_openai(text):
-    try:
-        prompt = f"Translate the following sentence to Sinhala:\ntext"
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "user", "content": prompt}]
-        )
-        translation = response.choices[0].message["content"].strip()
-        return translation
-    except Exception as e:
-        print("Translation error:", e)
-        return "Translation failed"
 
 def read_last_headline():
     if not os.path.exists(LAST_HEADLINE_FILE):
@@ -65,12 +57,15 @@ def fetch_latest_news():
     write_last_headline(headline)
 
     try:
-        translation = translate_with_openai(headline)
+        translation = translator.translate(headline, dest='si').text
     except Exception as e:
         translation = "Translation failed"
         logging.error(f"Translation error: {e}")
-
+      
     message = f"""📰 *Fundamental News (සිංහල)*
+
+🕒 Date & Time: {date_time}
+                
 
 🌎 *English:* {headline}
 
