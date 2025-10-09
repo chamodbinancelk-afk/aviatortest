@@ -54,10 +54,6 @@ def fetch_latest_news():
 
     write_last_headline(headline)
 
-# Construct full link
-    image_tag = soup.find('img', class_='attach')
-    img_url = image_tag['src'] if image_tag and image_tag.get('src') else None
-
     try:
         translation = translator.translate(headline, dest='si').text
     except Exception as e:
@@ -83,8 +79,11 @@ def fetch_latest_news():
 🚀 *Dev :* Mr Chamo 🇱🇰
 """
 
+    image_tag = soup.find('img', class_='attach')
+    img_url = image_tag['src'].strip() if image_tag and image_tag.get('src') else None
+
     try:
-        if img_url:
+        if img_url and img_url.startswith("http"):
         bot.send_photo(chat_id=CHAT_ID, photo=img_url, caption=message, parse_mode='Markdown')
         else:
             bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
