@@ -24,9 +24,6 @@ translator = Translator()
 logging.basicConfig(level=logging.INFO, filename="bot.log",
                     format='%(asctime)s %(levelname)s: %(message)s')
 
-now = datetime.now()
-    date_time = now.strftime('%Y-%m-%d %I:%M %p')
-
 
 def read_last_headline():
     if not os.path.exists(LAST_HEADLINE_FILE):
@@ -61,6 +58,9 @@ def fetch_latest_news():
     except Exception as e:
         translation = "Translation failed"
         logging.error(f"Translation error: {e}")
+
+    now = datetime.now()
+    date_time = now.strftime('%Y-%m-%d %I:%M %p')
       
     message = f"""📰 *Fundamental News (සිංහල)*
 
