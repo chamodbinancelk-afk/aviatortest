@@ -14,7 +14,7 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
 FF_URL = os.getenv("FOREXFACTORY_NEWS_URL", "https://www.forexfactory.com/news")
-FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 100))
+FETCH_INTERVAL = int(os.getenv("FETCH_INTERVAL_SEC", 1))
 LAST_HEADLINE_FILE = "last_headline.txt"
 
 bot = Bot(token=BOT_TOKEN)
@@ -54,6 +54,10 @@ def fetch_latest_news():
 
     write_last_headline(headline)
 
+# Construct full link
+    image_tag = soup.find('img', class_='attach')
+    img_url = image_tag['src'] if image_tag and image_tag.get('src') else None
+
     try:
         translation = translator.translate(headline, dest='si').text
     except Exception as e:
@@ -79,8 +83,14 @@ def fetch_latest_news():
 🚀 *Dev :* Mr Chamo 🇱🇰
 """
 
-    bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
-    logging.info(f"Posted: {headline}")
+    try:
+        if img_url:
+        bot.send_photo(chat_id=CHAT_ID, photo=img_url, caption=message, parse_mode='Markdown')
+        else:
+            bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
+        logging.info(f"Posted: {headline}")
+    except Exception as e:
+        logging.error(f"Telegram error: {e}")
 
 if __name__ == '__main__':
     while True:
