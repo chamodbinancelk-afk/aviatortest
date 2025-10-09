@@ -4,6 +4,7 @@ from googletrans import Translator
 from datetime import datetime
 from telegram import Bot
 from dotenv import load_dotenv
+import pytz
 import os
 import time
 import logging
@@ -59,12 +60,14 @@ def fetch_latest_news():
         translation = "Translation failed"
         logging.error(f"Translation error: {e}")
 
-    now = datetime.now()
+    sri_lanka_tz = pytz.timezone('Asia/Colombo')
+    now = datetime.now(sri_lanka_tz)
     date_time = now.strftime('%Y-%m-%d %I:%M %p')
       
     message = f"""📰 *Fundamental News (සිංහල)*
 
-🕒 Date & Time: {date_time}
+
+⏰ *Date & Time:* {date_time}
                 
 
 🌎 *English:* {headline}
@@ -73,7 +76,7 @@ def fetch_latest_news():
 🔥 *සිංහල:* {translation}
 
 
-🚀 *Dev :* Mr Chamo
+🚀 *Dev :* Mr Chamo 🇱🇰
 """
 
     bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
