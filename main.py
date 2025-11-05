@@ -1,71 +1,119 @@
-import telegram
-from telegram.ext import Updater, CommandHandler
 import random
 import logging
+from telegram import Update
+from telegram.ext import Application, CommandHandler, ContextTypes
 
-# වැදගත්: ඔබේ Bot Token එක මෙතැනට දාන්න
-TELEGRAM_BOT_TOKEN = '8382727460:AAEgKVISJN5TTuV4O-82sMGQDG3khwjiKR8' 
+# ⚠️ ඔබගේ Telegram Bot Token එක මෙහි ඇතුළත් කරන්න! ⚠️
+# ආරක්ෂාව සඳහා, මෙය Replit Secrets (පරිසර විචල්‍ය) හරහා ලබා ගැනීම වඩාත් සුදුසුය.
+TELEGRAM_BOT_TOKEN = "8382727460:AAEgKVISJN5TTuV4O-82sMGQDG3khwjiKR8" 
 
-# Log සකස් කිරීම
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+# Console හි Log පණිවිඩ පෙන්වීමට
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 logger = logging.getLogger(__name__)
 
-# --- Prediction Logic එක ---
-# Wingo වල ප්‍රතිඵල අහඹු නිසා, මේක සරල අහඹු තේරීමක් හෝ සරල රටාවක් පමණයි.
-# ඔබට මේ කොටස සංකීර්ණ රටා මත පදනම් වූ logic එකකින් වෙනස් කරන්න පුළුවන්.
+# --- Luhn Algorithm ක්‍රියාකාරීත්වය ---
 
-def generate_prediction():
-    # Colors: Red, Green, Violet
-    colors = ['Green', 'Red', 'Violet']
+def calculate_luhn_checksum(digits: str) -> int:
+    """ Luhn Algorithm අනුව පරීක්ෂක අංකය (checksum) ගණනය කරයි. """
     
-    # 70% Green, 20% Red, 10% Violet වගේ අහඹු තේරීමක්
-    # මේ percentages ඔබේ prediction logic එක අනුව වෙනස් කරන්න පුළුවන්
-    prediction_color = random.choices(colors, weights=[70, 20, 10], k=1)[0]
+    # අවසාන ඉලක්කම හැර අනෙකුත් ඉලක්කම් ගන්න
+    # Luhn පරීක්ෂාව අවසාන ඉලක්කම දකුණේ සිට පළමු අංකය ලෙස ගණන් ගනී.
+    # අපට අවශ්‍ය වන්නේ අවසාන ඉලක්කම පාලන අංකය ලෙස භාවිතා කිරීමටයි.
     
-    # Simple strategy message එකක්
-    if prediction_color == 'Green':
-        message = "💚 **GREEN** 💚\n\n**Strategy:** Next period Green. Start with small bet."
-    elif prediction_color == 'Red':
-        message = "❤️ **RED** ❤️\n\n**Strategy:** Next period Red. It's a risk, proceed with caution."
-    else: # Violet
-        message = "💜 **VIOLET** 💜\n\n**Strategy:** Violet comes less often. Try a combination of Red+Violet or Green+Violet."
+    # අපි අවසාන ඉලක්කම ඇතුළුව සම්පූර්ණ අංකය යවන්නේ නම්,
+    # අවසාන අංකයෙහි අගය වෙනස් වන්නේ නැත.
+    # මෙහිදී අපි එය 0 ලෙස සලකමු.
+    reversed_digits = [int(d) for d in digits][::-1]
+    total_sum = 0
     
-    return message
+    # දකුණේ සිට පළමු අංකය (පාලන අංකය) හැරෙන්නට
+    for i, digit in enumerate(reversed_digits):
+        # දකුණේ සිට දෙවන අංකය (i=1), හතරවන අංකය (i=3) ආදිය දෙගුණ කරයි
+        if i % 2 == 1: 
+            doubled = digit * 2
+            if doubled > 9:
+                doubled -= 9
+            total_sum += doubled
+        else:
+            total_sum += digit
+            
+    # Luhn Formula හි අවසාන පාලන අංකය ගණනය කිරීම
+    # (total_sum + check_digit) % 10 == 0 විය යුතුය.
+    checksum = (10 - (total_sum % 10)) % 10
+    return checksum
 
-# --- Telegram Command Handlers ---
+def generate_luhn_valid_number(length: int = 16) -> str:
+    """ Luhn Algorithm අනුව වලංගු ණයපත් ආකෘති අංකයක් ජනනය කරයි. """
+    
+    # ණයපත් ආකෘතියට අනුව 4 (VISA) හෝ 5 (Mastercard) වැනි අංකයකින් ආරම්භ කරන්න
+    first_digit = random.choice(['4', '5'])
+    
+    # අවසාන ඉලක්කම හැර ඉතිරි අහඹු ඉලක්කම් ජනනය කිරීම
+    base_number_prefix = first_digit + ''.join([str(random.randint(0, 9)) for _ in range(length - 1)])
 
-def start(update, context):
-    """/start command එකට උත්තර දෙනවා."""
-    welcome_message = (
-        "👋 **Hello! Welcome to the Wingo Prediction Bot.**\n\n"
-        "Remember, all predictions are based on patterns/random logic and are **NOT guaranteed**.\n\n"
-        "Use the command below:\n"
-        "**/predict** - Get the prediction for the next period."
+    # පාලන අංකය ගණනය කිරීම
+    # calculate_luhn_checksum ශ්‍රිතය අවසාන ඉලක්කම ලෙස 0 සලකමින් ක්‍රියා කරයි.
+    check_digit = calculate_luhn_checksum(base_number_prefix + '0')
+
+    # සම්පූර්ණ Luhn වලංගු අංකය සෑදීම
+    final_number = base_number_prefix[:-1] + str(check_digit)
+    
+    return final_number
+
+# --- Telegram Bot විධාන (Commands) ---
+
+async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """ /start විධානයට ප්‍රතිචාර දක්වයි. """
+    await update.message.reply_text(
+        '👋 *ආයුබෝවන්!* 💳\n\n'
+        'මම Luhn Algorithm අනුව *ආකෘතිගතව වලංගු* ණයපත් අංක ජනනය කරන Bot කෙනෙක්.\n'
+        'සැබෑ ගනුදෙනු සඳහා *සජීවී කාඩ්පත්* පරීක්ෂා කිරීමේ හැකියාව මා සතුව නැත.\n\n'
+        'අංකයක් ජනනය කිරීමට: */generate*',
+        parse_mode='Markdown'
     )
-    update.message.reply_text(welcome_message, parse_mode=telegram.ParseMode.MARKDOWN)
 
-def predict(update, context):
-    """/predict command එකට අනාවැකිය දෙනවා."""
-    prediction_text = generate_prediction()
-    update.message.reply_text(prediction_text, parse_mode=telegram.ParseMode.MARKDOWN)
+async def generate_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """ /generate විධානයට ප්‍රතිචාර දක්වා Luhn වලංගු අංකයක් ජනනය කරයි. """
+    try:
+        # Luhn වලංගු අංකය ජනනය කිරීම
+        cc_format = generate_luhn_valid_number(length=16)
+        
+        # කියවීමට පහසු වන ලෙස ආකෘතිකරණය කිරීම
+        formatted_cc = ' '.join([cc_format[i:i+4] for i in range(0, 16, 4)])
+        
+        # ප්‍රතිචාරය
+        response_text = (
+            f"✅ *Luhn වලංගු ආකෘති අංකය ජනනය විය:* \n\n"
+            f"`{formatted_cc}`\n\n"
+            f"_⚠️ මෙය ආකෘති පරීක්ෂාව සඳහා පමණි. මෙය සජීවී ගනුදෙනු කාඩ්පතක් නොවේ._"
+        )
+        await update.message.reply_text(response_text, parse_mode='Markdown')
+        
+    except Exception as e:
+        logger.error(f"Error during generation: {e}")
+        await update.message.reply_text("අංක ජනනය කිරීමේ දෝෂයක් සිදුවිය.")
 
-def main():
-    """Bot එක පටන් ගන්නවා."""
-    # Updater එක නිර්මාණය කිරීම
-    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
 
-    # Dispatcher එක ලබා ගැනීම
-    dp = updater.dispatcher
+def main() -> None:
+    """ Bot ආරම්භ කිරීම සඳහා ප්‍රධාන ශ්‍රිතය. """
+    
+    if TELEGRAM_BOT_TOKEN == "ඔබේ_සත්‍ය_BOT_TOKEN_එක_මෙහි_ඇතුළත්_කරන්න":
+        logger.error("කරුණාකර TELEGRAM_BOT_TOKEN විචල්‍යයට ඔබගේ සත්‍ය Bot Token එක ඇතුළත් කරන්න.")
+        return
 
-    # Command Handlers එකතු කිරීම
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("predict", predict))
+    # Application එක සාදන්න
+    application = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
 
-    # Bot එක ක්‍රියාත්මක කිරීම (Polling)
-    updater.start_polling()
+    # විධාන සඳහා Handlers එකතු කිරීම
+    application.add_handler(CommandHandler("start", start_command))
+    application.add_handler(CommandHandler("generate", generate_command))
 
-    # Bot එක නතර කරන තුරු ක්‍රියාත්මක වෙනවා
-    updater.idle()
+    # Bot ක්‍රියාත්මක කිරීම (Replit සඳහා Polling)
+    logger.info("Bot ආරම්භ විය...")
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 if __name__ == '__main__':
     main()
